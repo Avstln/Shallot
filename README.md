@@ -1,9 +1,9 @@
-# SLIVER: Streamlined Lightweight Infrastructure for Vulnerability Exploration & Research
+# SHALLOT: Simplified Homelab Architecture of Lightweight Logging and Observation Tools
 Forked from elkninja's [Elastic Stack Docker Part 1](https://github.com/elkninja/elastic-stack-docker-part-one)</sub>
 
 ## Introduction
 
-**Sliver** is a lightweight Docker-based environment designed for researchers to explore vulnerabilities and conduct security research in a controlled, minimalistic setup. By leveraging Docker Compose and a simplified ELK stack, Sliver provides an easily deployable, streamlined infrastructure for vulnerability analysis, without the overhead of a full-scale security solution. A lighthearted play on words, Sliver is "Security Onion Lite".
+**Shallot** is a lightweight Docker-based environment designed for researchers to explore vulnerabilities and conduct security research in a controlled, minimalistic setup. By leveraging Docker Compose and a simplified ELK stack, Shallot provides an easily deployable, streamlined infrastructure for vulnerability analysis, without the overhead of a full-scale security solution. A lighthearted play on words, Shallot is "Security Onion Lite".
 
 ## Project Goals
 
@@ -35,10 +35,10 @@ packet capture files (PCAP) as well as a jupyter notebook ready-to-go for analys
 ## Setup Instructions
 
 1. Clone the repository:  
-   `git clone https://github.com/yourusername/sliver.git`
+   `git clone https://github.com/yourusername/shallot.git`
 
 2. Navigate to the project directory:  
-   `cd sliver`
+   `cd shallot`
    
 3. Add Packet Capture files into the /pcap directory
    
@@ -59,7 +59,7 @@ i.e: `watch 'docker compose ps'`
 
 ## Additional Tools
 
-Sliver includes basic ELK stack components but can be extended with additional tools as needed for specific vulnerability research tasks.
+Shallot includes basic ELK stack components but can be extended with additional tools as needed for specific vulnerability research tasks.
 
 ## Documentation
 
@@ -70,8 +70,8 @@ For more details on ELK and Docker, refer to the official documentation:
 
 ## Contributing
 
-Contributions to Sliver are welcome! If you have improvements, bug fixes, or additional tools to suggest, feel free to submit a pull request.
+Contributions to Shallot are welcome! If you have improvements, bug fixes, or additional tools to suggest, feel free to submit a pull request.
 
 ## Disclaimer
 
-Sliver is intended for educational and research purposes only. Please use responsibly and in accordance with applicable laws and regulations.
+Shallot is intended for educational and research purposes only. Please use responsibly and in accordance with applicable laws and regulations.
