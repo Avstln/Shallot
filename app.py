@@ -12,7 +12,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-ZEEK_CONTAINER_NAME = 'zeek_container'  # Name of your Zeek container
+ZEEK_CONTAINER_NAME = 'zeek01'  # Name of your Zeek container
 
 @app.route('/')
 def index():
@@ -63,7 +63,7 @@ def analyze_file(filename):
         try:
             # Execute the Zeek analysis on the other container
             result = subprocess.run([
-                'docker', 'exec', zeek01, 'zeek', '-Cr', 'LogAscii::use_json=T', f"/pcap/{filename}"
+                'docker', 'exec', ZEEK_CONTAINER_NAME, 'zeek', '-Cr', 'LogAscii::use_json=T', f"/pcap/{filename}"
             ], capture_output=True, text=True)
 
             if result.returncode == 0:
