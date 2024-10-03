@@ -81,11 +81,13 @@ services:
         COPY ./app.py .
         RUN mkdir templates
         COPY ./upload.html templates/.
+        COPY ./logo.jpg templates/.
         RUN pip install Flask
         RUN chmod +x ./app.py
     command: bash -c 'python app.py'
     volumes:
       - pcap:/app/uploads
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - ${WEB_SERVER}:5000
 

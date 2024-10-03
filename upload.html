@@ -3,10 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload PCAP Files</title>
+    <title>SHALLOT - Upload and Analyze PCAP Files</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            background-color: #222;
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        header img {
+            max-height: 50px;
+            vertical-align: middle;
+        }
+
+        header h1 {
+            display: inline;
+            font-size: 2em;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        form {
+            margin: 20px 0;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            background-color: #fff;
+        }
+
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #218838;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        ul li {
+            background-color: white;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar {
+            margin-top: 10px;
+            width: 100%;
+            background-color: #ddd;
+        }
+
+        .progress-bar div {
+            height: 20px;
+            width: 0;
+            background-color: #4caf50;
+        }
+
+        .btn-delete, .btn-analyze {
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-analyze {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
 </head>
 <body>
-    <h1>Upload PCAP Files</h1>
+    <header>
+        <img src="logo.png" alt="SHALLOT Logo">
+        <h1>SHALLOT - Simple Home-Lab Adaptation of a Lightweight Observation Toolkit</h1>
+    </header>
+
+    <h2>Upload PCAP Files</h2>
+
+    <!-- Flash messages for feedback -->
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             <ul>
@@ -16,18 +122,510 @@
             </ul>
         {% endif %}
     {% endwith %}
-    
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".pcap" required>
+
+    <!-- File upload form -->
+    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="files" accept=".pcap" multiple required>
         <input type="submit" value="Upload">
     </form>
 
+    <!-- Progress bar -->
+    <div class="progress-bar">
+        <div id="progress"></div>
+    </div>
+
+    <!-- Uploaded files list with delete and analyze buttons -->
     <h2>Uploaded Files:</h2>
     <ul>
         {% for file in files %}
-            <li><a href="{{ url_for('uploaded_file', filename=file) }}">{{ file }}</a></li>
+            <li>
+                <a href="{{ url_for('uploaded_file', filename=file) }}">{{ file }}</a>
+                <button class="btn-analyze" onclick="analyzeFile('{{ file }}')">Analyze</button>
+                <button class="btn-delete" onclick="deleteFile('{{ file }}')">Delete</button>
+            </li>
         {% endfor %}
     </ul>
+
+    <script>
+        // Handle file upload with progress bar
+        const form = document.getElementById('upload-form');
+        const progressBar = document.getElementById('progress');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('POST', form.action, true);
+
+            // Update progress bar
+            xhr.upload.onprogress = function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    progressBar.style.width = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    location.reload(); // Refresh the page after upload
+                } else {
+                    alert('Error uploading file');
+                }
+            };
+
+            xhr.send(formData);
+        });
+
+        // Handle file deletion
+        function deleteFile(filename) {
+            if (confirm('Are you sure you want to delete ' + filename + '?')) {
+                fetch('/delete/' + filename, {
+                    method: 'DELETE'
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload(); // Refresh the page after deletion
+                    } else {
+                        alert('Error deleting file');
+                    }
+                });
+            }
+        }
+
+        // Handle file analysis
+        function analyzeFile(filename) {
+            fetch('/analyze/' + filename, {
+                method: 'POST'
+            }).then(response => {
+                if (response.ok) {
+                    alert('Analysis started for ' + filename);
+                } else {
+                    alert('Error starting analysis');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHALLOT - Upload and Analyze PCAP Files</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            background-color: #222;
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        header img {
+            max-height: 50px;
+            vertical-align: middle;
+        }
+
+        header h1 {
+            display: inline;
+            font-size: 2em;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        form {
+            margin: 20px 0;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            background-color: #fff;
+        }
+
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #218838;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        ul li {
+            background-color: white;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar {
+            margin-top: 10px;
+            width: 100%;
+            background-color: #ddd;
+        }
+
+        .progress-bar div {
+            height: 20px;
+            width: 0;
+            background-color: #4caf50;
+        }
+
+        .btn-delete, .btn-analyze {
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-analyze {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="logo.png" alt="SHALLOT Logo">
+        <h1>SHALLOT - Simple Home-Lab Adaptation of a Lightweight Observation Toolkit</h1>
+    </header>
+
+    <h2>Upload PCAP Files</h2>
+
+    <!-- Flash messages for feedback -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <!-- File upload form -->
+    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="files" accept=".pcap" multiple required>
+        <input type="submit" value="Upload">
+    </form>
+
+    <!-- Progress bar -->
+    <div class="progress-bar">
+        <div id="progress"></div>
+    </div>
+
+    <!-- Uploaded files list with delete and analyze buttons -->
+    <h2>Uploaded Files:</h2>
+    <ul>
+        {% for file in files %}
+            <li>
+                <a href="{{ url_for('uploaded_file', filename=file) }}">{{ file }}</a>
+                <button class="btn-analyze" onclick="analyzeFile('{{ file }}')">Analyze</button>
+                <button class="btn-delete" onclick="deleteFile('{{ file }}')">Delete</button>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        // Handle file upload with progress bar
+        const form = document.getElementById('upload-form');
+        const progressBar = document.getElementById('progress');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('POST', form.action, true);
+
+            // Update progress bar
+            xhr.upload.onprogress = function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    progressBar.style.width = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    location.reload(); // Refresh the page after upload
+                } else {
+                    alert('Error uploading file');
+                }
+            };
+
+            xhr.send(formData);
+        });
+
+        // Handle file deletion
+        function deleteFile(filename) {
+            if (confirm('Are you sure you want to delete ' + filename + '?')) {
+                fetch('/delete/' + filename, {
+                    method: 'DELETE'
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload(); // Refresh the page after deletion
+                    } else {
+                        alert('Error deleting file');
+                    }
+                });
+            }
+        }
+
+        // Handle file analysis
+        function analyzeFile(filename) {
+            fetch('/analyze/' + filename, {
+                method: 'POST'
+            }).then(response => {
+                if (response.ok) {
+                    alert('Analysis started for ' + filename);
+                } else {
+                    alert('Error starting analysis');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHALLOT - Upload and Analyze PCAP Files</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            background-color: #222;
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        header img {
+            max-height: 50px;
+            vertical-align: middle;
+        }
+
+        header h1 {
+            display: inline;
+            font-size: 2em;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        form {
+            margin: 20px 0;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            background-color: #fff;
+        }
+
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #218838;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        ul li {
+            background-color: white;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar {
+            margin-top: 10px;
+            width: 100%;
+            background-color: #ddd;
+        }
+
+        .progress-bar div {
+            height: 20px;
+            width: 0;
+            background-color: #4caf50;
+        }
+
+        .btn-delete, .btn-analyze {
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-analyze {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="logo.jpg" alt="SHALLOT Logo">
+        <h1>SHALLOT - Simplified Homelab Architecture of Lightweight Logging and Observation Tools</h1>
+    </header>
+
+    <h2>Upload PCAP Files</h2>
+
+    <!-- Flash messages for feedback -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <!-- File upload form -->
+    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="files" accept=".pcap" multiple required>
+        <input type="submit" value="Upload">
+    </form>
+
+    <!-- Progress bar -->
+    <div class="progress-bar">
+        <div id="progress"></div>
+    </div>
+
+    <!-- Uploaded files list with delete and analyze buttons -->
+    <h2>Uploaded Files:</h2>
+    <ul>
+        {% for file in files %}
+            <li>
+                <a href="{{ url_for('uploaded_file', filename=file) }}">{{ file }}</a>
+                <button class="btn-analyze" onclick="analyzeFile('{{ file }}')">Analyze</button>
+                <button class="btn-delete" onclick="deleteFile('{{ file }}')">Delete</button>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        // Handle file upload with progress bar
+        const form = document.getElementById('upload-form');
+        const progressBar = document.getElementById('progress');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('POST', form.action, true);
+
+            // Update progress bar
+            xhr.upload.onprogress = function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    progressBar.style.width = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    location.reload(); // Refresh the page after upload
+                } else {
+                    alert('Error uploading file');
+                }
+            };
+
+            xhr.send(formData);
+        });
+
+        // Handle file deletion
+        function deleteFile(filename) {
+            if (confirm('Are you sure you want to delete ' + filename + '?')) {
+                fetch('/delete/' + filename, {
+                    method: 'DELETE'
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload(); // Refresh the page after deletion
+                    } else {
+                        alert('Error deleting file');
+                    }
+                });
+            }
+        }
+
+        // Handle file analysis
+        function analyzeFile(filename) {
+            fetch('/analyze/' + filename, {
+                method: 'POST'
+            }).then(response => {
+                if (response.ok) {
+                    alert('Analysis started for ' + filename);
+                } else {
+                    alert('Error starting analysis');
+                }
+            });
+        }
+    </script>
 </body>
 </html>
 
