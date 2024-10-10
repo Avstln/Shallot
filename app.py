@@ -3,6 +3,7 @@ import subprocess
 from flask import Flask, request, render_template, send_from_directory, redirect, flash, jsonify
 import os
 import datetime
+import docker
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -12,7 +13,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-ZEEK_CONTAINER_NAME = 'zeek01'  # Name of your Zeek container
+ZEEK_CONTAINER_NAME = 'shallot-zeek01-1'  # Name of your Zeek container
 
 @app.route('/')
 def index():
@@ -59,17 +60,22 @@ def delete_file(filename):
 @app.route('/analyze/<filename>', methods=['POST'])
 def analyze_file(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
     if os.path.exists(file_path):
         try:
+            client = docker.from_env()
+            command = f"cd /filebeatInput && zeek -Cr {filename} LogAscii::use_json=T"
+            
             # Execute the Zeek analysis on the other container
-            result = subprocess.run([
-                'docker', 'exec', ZEEK_CONTAINER_NAME, 'zeek', '-Cr', 'LogAscii::use_json=T', f"/pcap/{filename}"
-            ], capture_output=True, text=True)
-
-            if result.returncode == 0:
+            result = client.containers.get(ZEEK_CONTAINER_NAME).exec_run(command)
+            
+            if result.exit_code == 0:
                 return jsonify(success=True, message=f"Analysis completed for {filename}"), 200
             else:
-                return jsonify(success=False, error=f"Zeek analysis failed: {result.stderr}"), 500
+                return jsonify(success=False, error=f"Zeek analysis failed: {result.output.decode()}"), 500
+            
+        except docker.errors.NotFound:
+            return jsonify(success=False, error="Zeek container not found"), 404
         except Exception as e:
             return jsonify(success=False, error=str(e)), 500
 

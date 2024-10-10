@@ -1,0 +1,120 @@
+# Module: zeek
+# Docs: https://www.elastic.co/guide/en/beats/filebeat/7.9/filebeat-module-zeek.html
+
+
+- module: zeek
+  capture_loss:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/capture_loss.log"]
+  connection:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/conn.log"]
+  dce_rpc:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/dce_rpc.log"]
+  dhcp:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/dhcp.log"]
+  dnp3:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/dnp3.log"]
+  dns:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/dns.log"]
+  dpd:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/dpd.log"]
+  files:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/files.log"]
+  ftp:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/ftp.log"]
+  http:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/http.log"]
+  intel:
+    enabled: false  
+    var.paths: ["/usr/share/filebeat/ingest_data/intel.log"]  
+  irc:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/irc.log"]
+  kerberos:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/kerberos.log"]
+  modbus:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/modbus.log"]
+  mysql:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/mysql.log"]
+  notice:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/notice.log"]
+  ntlm:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/ntlm.log"]
+  ocsp:
+    enabled: false
+    var.paths: ["/usr/share/filebeat/ingest_data/ocsp.log"]
+  pe:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/pe.log"]
+  radius:
+    enabled: false
+    var.paths: ["/usr/share/filebeat/ingest_data/radius.log"]
+  rdp:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/rdp.log"]
+  rfb:
+    enabled: false
+    var.paths: ["/usr/share/filebeat/ingest_data/rfb.log"]
+  sip:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/sip.log"]
+  smb_cmd:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/smb_cmd.log"]
+  smb_files:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/smb_files.log"]
+  smb_mapping:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/smb_mapping.log"]
+  smtp:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/smtp.log"]
+  snmp:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/snmp.log"]
+  socks:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/socks.log"]
+  ssh:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/ssh.log"]
+  ssl:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/ssl.log"]
+  stats:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/stats.log"]
+  syslog:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/syslog.log"]
+  traceroute:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/traceroute.log"]
+  tunnel:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/tunnel.log"]
+  weird:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/weird.log"]
+  x509:
+    enabled: true
+    var.paths: ["/usr/share/filebeat/ingest_data/x509.log"]
+
+    # Set custom paths for the log files. If left empty,
+    # Filebeat will choose the paths depending on your OS.
+    #var.paths:
