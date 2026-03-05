@@ -2,11 +2,11 @@ volumes:
   certs:
   pcap:
   esdata:
-  kibanadata:
-  metricbeatdata:
+  kbdata:
   outputLogs:
   splunkingest:
-  jupyterdata:
+  splunkdata:
+  splunketc:
 
 networks:
   default:
@@ -15,7 +15,7 @@ networks:
 
 services:
   setup:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    image: elasticsearch:${STACK_VERSION}
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
     user: "0"
@@ -43,9 +43,9 @@ services:
           "      - localhost\n"\
           "    ip:\n"\
           "      - 127.0.0.1\n"\
-          "  - name: kibana\n"\
+          "  - name: kb01\n"\
           "    dns:\n"\
-          "      - kibana\n"\
+          "      - kb01\n"\
           "      - localhost\n"\
           "    ip:\n"\
           "      - 127.0.0.1\n"\
@@ -55,8 +55,8 @@ services:
         fi;
         echo "Setting file permissions"
         chown -R root:root config/certs;
-        find . -type d -exec chmod 750 \{\} \;;
-        find . -type f -exec chmod 640 \{\} \;;
+        find config/certs -type d -exec chmod 750 \{\} \;;
+        find config/certs -type f -exec chmod 640 \{\} \;;
         echo "Waiting for Elasticsearch availability";
         until curl -s --cacert config/certs/ca/ca.crt https://es01:9200 | grep -q "missing authentication credentials"; do sleep 30; done;
         echo "Setting kibana_system password";
@@ -68,12 +68,11 @@ services:
       interval: 1s
       timeout: 5s
       retries: 120
-
   webserver:
     build:
       context: .
       dockerfile_inline: |
-        FROM python:3.9-slim
+        FROM python:3.11-slim
         WORKDIR /app
         COPY ./app.py .
         RUN mkdir templates
@@ -92,7 +91,7 @@ services:
     depends_on:
       setup:
         condition: service_healthy
-    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    image: elasticsearch:${STACK_VERSION}
     labels:
       co.elastic.logs/module: elasticsearch
     volumes:
@@ -106,6 +105,7 @@ services:
       - discovery.type=single-node
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - bootstrap.memory_lock=true
+      - ES_JAVA_OPTS=-Xms2g -Xmx2g
       - xpack.security.enabled=true
       - xpack.security.http.ssl.enabled=true
       - xpack.security.http.ssl.key=certs/es01/es01.key
@@ -126,26 +126,25 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -s --cacert config/certs/ca/ca.crt https://localhost:9200 | grep -q 'missing authentication credentials'",
+          "curl -s --cacert config/certs/ca/ca.crt -o /dev/null -w \"%{http_code}\" https://localhost:9200 | grep -q 401",
         ]
       interval: 10s
       timeout: 10s
       retries: 120
-
-  kibana:
+  kb01:
     depends_on:
       es01:
         condition: service_healthy
-    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    image: kibana:${STACK_VERSION}
     labels:
       co.elastic.logs/module: kibana
     volumes:
       - certs:/usr/share/kibana/config/certs
-      - kibanadata:/usr/share/kibana/data
+      - kbdata:/usr/share/kibana/data
     ports:
       - ${KIBANA_PORT}:5601
     environment:
-      - SERVERNAME=kibana
+      - SERVERNAME=kb01
       - ELASTICSEARCH_HOSTS=https://es01:9200
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
@@ -163,13 +162,13 @@ services:
       interval: 10s
       timeout: 10s
       retries: 120
-
-  filebeat01:
+  fb01:
     depends_on:
       es01:
         condition: service_healthy
-      kibana:
+      kb01:
         condition: service_healthy
+    mem_limit: 512m
     build:
       context: .
       dockerfile_inline: |
@@ -179,7 +178,7 @@ services:
         ENV ELASTIC_USER=elastic
         ENV ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
         ENV ELASTIC_HOSTS=https://es01:9200
-        ENV KIBANA_HOSTS=http://kibana:5601
+        ENV KIBANA_HOSTS=http://kb01:5601
         COPY filebeat.yml .
         RUN chmod go-w /usr/share/filebeat/filebeat.yml
         RUN ./filebeat modules enable zeek suricata
@@ -191,38 +190,14 @@ services:
       - outputLogs:/usr/share/filebeat/ingest_data/
       - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    command: bash -c './filebeat setup && filebeat -e'
+    command: bash -c 'filebeat setup || true; exec filebeat -e'
       
-  metricbeat01:
+  zk01:
     depends_on:
       es01:
         condition: service_healthy
-      kibana:
-        condition: service_healthy
-    image: docker.elastic.co/beats/metricbeat:${STACK_VERSION}
-    user: root
-    volumes:
-      - certs:/usr/share/metricbeat/certs
-      - metricbeatdata:/usr/share/metricbeat/data
-      - "./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro"
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "/sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro"
-      - "/proc:/hostfs/proc:ro"
-      - "/:/hostfs:ro"
-    environment:
-      - ELASTIC_USER=elastic
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - ELASTIC_HOSTS=https://es01:9200
-      - KIBANA_HOSTS=http://kibana:5601
-    command:
-      - --strict.perms=false
-
-  zeek01:
-    depends_on:
-      es01:
-        condition: service_healthy
-    image: zeek/zeek:latest
-    user: root
+    image: zeek/zeek:${ZEEK_VERSION}
+    mem_limit: 1g
     command: tail -F anything
     volumes:
       - outputLogs:/zeekLogs
@@ -232,43 +207,45 @@ services:
       - ELASTIC_USER=elastic
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - ELASTIC_HOSTS=https://es01:9200
-      - KIBANA_HOSTS=http://kibana:5601
+      - KIBANA_HOSTS=http://kb01:5601
 
-  suricata01:
-    image: jasonish/suricata:latest
+  sur01:
+    image: jasonish/suricata:${SURICATA_VERSION}
+    mem_limit: 1g
     volumes:
       - "./suricata.yaml:/etc/suricata/suricata.yaml"
+      - "./local.rules:/home/suricata/local.rules"
       - outputLogs:/var/log/suricata
       - pcap:/pcap
     environment:
       - ELASTIC_HOSTS=https://es01:9200
       - ELASTIC_USER=elastic
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-
-  jupyter01:
-    depends_on:
-      es01:
-        condition: service_healthy
-    image: quay.io/jupyter/datascience-notebook:2024-08-30
-    ports:
-      - ${JUPYTER_PORT}:8888
-    volumes:
-      - jupyterdata:/home/jovyan/work/
-    environment:
-      - ELASTIC_USER=elastic
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - ELASTIC_HOSTS=https://es01:9200
-
+    command: >
+      suricata
+        -c /etc/suricata/suricata.yaml
+        --pcap-file-continuous
+        --pcap-file-delete
+        -r /pcap 
+        -k none
+        -S /home/suricata/local.rules
+        -l /var/log/suricata/
+        -vv
+    
   splunk01:
     depends_on:
       es01:
         condition: service_healthy
-    image: splunk/splunk:latest
+    image: splunk/splunk:${SPLUNK_VERSION}
+    mem_limit: 2g
     ports:
       - ${SPLUNK_PORT}:8000
     environment:
       - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_GENERAL_TERMS=--accept-sgt-current-at-splunk-com
       - SPLUNK_PASSWORD=${SPLUNK_PASSWORD}
     volumes:
       - splunkingest:/opt/splunk/var/spool/splunk/
+      - splunkdata:/opt/splunk/var
+      - splunketc:/opt/splunk/etc
 
